@@ -255,6 +255,8 @@
 				DEVELOPMENT_TEAM = 345UR7Z9A7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We use speech recognition to provide a more interactive and hands-free experience by allowing you to speak directly to the app for certain actions or features.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "We use speech recognition to provide a more interactive and hands-free experience by allowing you to speak directly to the app for certain actions or features.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -284,6 +286,8 @@
 				DEVELOPMENT_TEAM = 345UR7Z9A7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "We use speech recognition to provide a more interactive and hands-free experience by allowing you to speak directly to the app for certain actions or features.";
+				INFOPLIST_KEY_NSSpeechRecognitionUsageDescription = "We use speech recognition to provide a more interactive and hands-free experience by allowing you to speak directly to the app for certain actions or features.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
