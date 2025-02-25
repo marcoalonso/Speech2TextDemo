@@ -74,17 +74,33 @@ class SpeechManager: ObservableObject {
     }
 }
 
+// MARK: - Snackbar View
+struct SnackbarView: View {
+    var message: String
+    
+    var body: some View {
+        Text(message)
+            .padding()
+            .frame(maxWidth: .infinity)
+            .background(Color.black.opacity(0.8))
+            .foregroundColor(.white)
+            .cornerRadius(10)
+            .padding(.horizontal, 16)
+    }
+}
+
 // MARK: - Vista Principal
 struct ContentView: View {
     @StateObject private var speechManager = SpeechManager()
     @State private var isRecording = false
     @State private var showSnackbar: Bool = false
     @State private var snackbarMessage: String = ""
+    @State private var showAlert: Bool = false
     
     var body: some View {
         ZStack {
             VStack(spacing: 20) {
-                // Imagen representativa (se asume que la imagen "micro" está en Assets)
+                // Imagen representativa (asegúrate de tener la imagen "micro" en Assets)
                 Image("micro")
                     .resizable()
                     .frame(width: 150, height: 150)
@@ -123,9 +139,13 @@ struct ContentView: View {
                     }
                     
                     Button(action: {
-                        // Copiar el contenido del texto al portapapeles
-                        UIPasteboard.general.string = speechManager.recognizedText
-                        showBottomNotification(message: "Texto copiado al portapapeles")
+                        // Verifica si hay texto para copiar
+                        if speechManager.recognizedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            showAlert = true
+                        } else {
+                            UIPasteboard.general.string = speechManager.recognizedText
+                            showBottomNotification(message: "Texto copiado al portapapeles")
+                        }
                     }) {
                         HStack {
                             Image(systemName: "doc.on.doc")
@@ -160,8 +180,13 @@ struct ContentView: View {
                     }
                 }
             }
+            .alert("No hay texto", isPresented: $showAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Debe grabar para convertir el audio a texto y poder copiarlo al portapapeles.")
+            }
             
-            // Vista de notificación (Snackbar) en la parte inferior
+            // Snackbar animado que se desliza desde abajo
             if showSnackbar {
                 VStack {
                     Spacer()
@@ -169,38 +194,23 @@ struct ContentView: View {
                         .transition(.move(edge: .bottom))
                         .padding(.bottom, 20)
                 }
-                .animation(.easeInOut, value: showSnackbar)
+                .animation(.easeInOut(duration: 0.5), value: showSnackbar)
             }
         }
     }
     
-    // Función para mostrar la notificación tipo Snackbar
+    // Función para mostrar el Snackbar con la animación deseada
     func showBottomNotification(message: String) {
         snackbarMessage = message
-        withAnimation {
+        withAnimation(.easeInOut(duration: 0.5)) {
             showSnackbar = true
         }
-        // Ocultar la notificación después de 3 segundos
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-            withAnimation {
+        // Se mantiene visible 1 segundo y luego se oculta con animación
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            withAnimation(.easeInOut(duration: 0.5)) {
                 showSnackbar = false
             }
         }
-    }
-}
-
-// MARK: - Snackbar View
-struct SnackbarView: View {
-    var message: String
-    
-    var body: some View {
-        Text(message)
-            .padding()
-            .frame(maxWidth: .infinity)
-            .background(Color.black.opacity(0.8))
-            .foregroundColor(.white)
-            .cornerRadius(10)
-            .padding(.horizontal, 16)
     }
 }
 
