@@ -32,7 +32,7 @@ struct CustomButton: View {
 }
 
 #Preview {
-    CustomButton(iconName: "trash", backgroundColor: Color.red, action: {
+    CustomButton(iconName: "mic.fill", backgroundColor: Color.red, action: {
         
     })
 }

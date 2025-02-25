@@ -18,9 +18,14 @@ struct ContentView: View {
     @State private var alertMessage: String = "" // Estado para el mensaje de la alerta
     @State private var snackbarOffset: CGFloat = 80
     
+    // Instancias de UIImpactFeedbackGenerator para diferentes estilos de vibración
+    private let recordHaptic = UIImpactFeedbackGenerator(style: .medium) // Para grabar/detener
+    private let copyHaptic = UIImpactFeedbackGenerator(style: .light)    // Para copiar
+    private let deleteHaptic = UIImpactFeedbackGenerator(style: .heavy)  // Para borrar
+    
     var body: some View {
         ZStack {
-            VStack(spacing: 20) {
+            VStack(spacing: 10) {
                 // Imagen representativa
                 Image("micro")
                     .resizable()
@@ -32,68 +37,60 @@ struct ContentView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding()
                 }
-                .frame(height: 500)
+                .frame(height: 400)
                 .background(Color(UIColor.secondarySystemBackground))
                 .cornerRadius(10)
                 .padding(.horizontal)
                 
                 // Botones: grabar/detener y copiar texto
                 HStack(spacing: 8) {
-                    Button(action: {
-                        isRecording.toggle()
-                        if isRecording {
-                            speechManager.startRecording()
-                        } else {
-                            speechManager.stopRecording()
+                    CustomButton(
+                        iconName: isRecording ? "stop.fill" : "mic.fill",
+                        text: isRecording ? "Detener" : "Grabar",
+                        backgroundColor: isRecording ? .red : .green,
+                        action: {
+                            recordHaptic.impactOccurred()
+                            isRecording.toggle()
+                            if isRecording {
+                                speechManager.startRecording()
+                            } else {
+                                speechManager.stopRecording()
+                            }
                         }
-                    }) {
-                        HStack {
-                            Image(systemName: isRecording ? "stop.fill" : "mic.fill")
-                            Text(isRecording ? "Detener" : "Grabar")
-                        }
-                        .font(.headline)
-                        .padding()
-                        .frame(maxWidth: .infinity)
-                        .foregroundColor(.white)
-                        .background(isRecording ? Color.red : Color.green)
-                        .cornerRadius(10)
-                    }
+                    )
                     
                     HStack {
-                        Button(action: {
-                            if speechManager.recognizedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                showAlertWithMessage("Debe grabar para convertir el audio a texto y poder copiarlo al portapapeles.")
-                            } else {
-                                UIPasteboard.general.string = speechManager.recognizedText
-                                Task { await showBottomNotification(message: "Texto copiado al portapapeles") }
+                        // Botón de copiar
+                        CustomButton(
+                            iconName: "doc.on.doc",
+                            text: nil, // Solo ícono
+                            backgroundColor: .blue,
+                            action: {
+                                if speechManager.recognizedText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                    showAlertWithMessage("Debe grabar para convertir el audio a texto y poder copiarlo al portapapeles.")
+                                    copyHaptic.impactOccurred()
+                                } else {
+                                    UIPasteboard.general.string = speechManager.recognizedText
+                                    Task { await showBottomNotification(message: "Texto copiado al portapapeles") }
+                                }
                             }
-                        }) {
-                            Image(systemName: "doc.on.doc")
-                                .font(.headline)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .foregroundColor(.white)
-                                .background(Color.blue)
-                                .cornerRadius(10)
-                        }
+                        )
                         
-                        Button(action: {
-                            if speechManager.recognizedText.isEmpty {
-                                return
-                            } else {
-                                speechManager.recognizedText = ""
-                                Task { await showBottomNotification(message: "Contenido borrado") }
+                        // Botón de borrar
+                        CustomButton(
+                            iconName: "trash",
+                            text: nil, // Solo ícono
+                            backgroundColor: .red,
+                            action: {
+                                if !speechManager.recognizedText.isEmpty {
+                                    speechManager.recognizedText = ""
+                                    Task { await showBottomNotification(message: "Contenido borrado") }
+                                } else {
+                                    showAlertWithMessage("No hay nada que borrar.")
+                                    deleteHaptic.impactOccurred()
+                                }
                             }
-                            
-                        }) {
-                            Image(systemName: "trash")
-                                .font(.headline)
-                                .padding()
-                                .frame(maxWidth: .infinity)
-                                .foregroundColor(.white)
-                                .background(Color.red)
-                                .cornerRadius(10)
-                        }
+                        )
                     }
                 }
                 .padding(.horizontal)
@@ -103,22 +100,7 @@ struct ContentView: View {
             .padding()
             .onAppear {
                 // Solicita autorización para usar el reconocimiento de voz
-                SFSpeechRecognizer.requestAuthorization { authStatus in
-                    switch authStatus {
-                    case .authorized:
-                        print("Autorización concedida")
-                    case .denied:
-                        print("Autorización denegada")
-                        showAlertWithMessage("Autorización denegada para usar el reconocimiento de voz. Ajusta las configuraciones de privacidad en tu dispositivo.")
-                    case .restricted:
-                        print("El reconocimiento de voz está restringido en este dispositivo")
-                        showAlertWithMessage("El reconocimiento de voz está restringido en este dispositivo.")
-                    case .notDetermined:
-                        print("La autorización no se ha determinado")
-                    @unknown default:
-                        print("Estado desconocido")
-                    }
-                }
+                requestPermissionSpeech()
             }
             .alert("Aviso", isPresented: $showAlert) { // Título de la alerta
                 Button("OK", role: .cancel) { }
@@ -138,6 +120,24 @@ struct ContentView: View {
         }
     }
     
+    private func requestPermissionSpeech() {
+        SFSpeechRecognizer.requestAuthorization { authStatus in
+            switch authStatus {
+            case .authorized:
+                print("Autorización concedida")
+            case .denied:
+                print("Autorización denegada")
+                showAlertWithMessage("Autorización denegada para usar el reconocimiento de voz. Ajusta las configuraciones de privacidad en tu dispositivo.")
+            case .restricted:
+                print("El reconocimiento de voz está restringido en este dispositivo")
+                showAlertWithMessage("El reconocimiento de voz está restringido en este dispositivo.")
+            case .notDetermined:
+                print("La autorización no se ha determinado")
+            @unknown default:
+                print("Estado desconocido")
+            }
+        }
+    }
     // Función para mostrar la alerta con un mensaje específico
     func showAlertWithMessage(_ message: String) {
         alertMessage = message // Configura el mensaje
